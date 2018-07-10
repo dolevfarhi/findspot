@@ -1,0 +1,21 @@
+.site a{
+  text-decoration: none;
+}
+.card-img-top{
+  max-height:360px;
+}
+.pointer{
+  cursor: pointer
+}
+.vw-100{width: 100vw;}
+.vh-100{height: 100vh}
+/*Splash Screen*/
+
+.textLogo{ margin-top: 16vh; font-size: 36px; color:#3279ff; font-weight: 700}
+
+
+
+/*Home*/
+
+.findButton {height: 40px; background: #FFF; border:none;}
+.findButton:focus {outline:none;}
