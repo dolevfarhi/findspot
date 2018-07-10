@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 
 class Splash extends Component {
   constructor(props) {
@@ -7,17 +7,15 @@ class Splash extends Component {
   }
   componentDidMount() {
     var self = this;
-    setTimeout(() => self.props.history.push('/home'), 300);
+    setTimeout(() => self.props.history.push('/home'), 2000);
   }
   render() {
-  return (
-    <div>
+    return (<div>
       <span className="textLogo position-absolute vw-100">Sp_ot</span>
       <span><img src="./splash.png" className="vh-100 vw-100" alt="Splash Screen"/></span>
-    </div>
-  )
+    </div>)
 
-}
+  }
 }
 
 export default Splash;
