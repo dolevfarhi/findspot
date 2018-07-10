@@ -1,19 +1,22 @@
-import React from "react"
-import { compose, withProps } from "recompose"
-import { withScriptjs, withGoogleMap, GoogleMap, Marker } from "react-google-maps"
+import React, { Component } from 'react';
+import {Map,  Marker} from 'google-maps-react';
 
-const MyMapComponent = compose(
-  withProps({
-    googleMapURL: `https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=geometry,drawing,places&key=${process.env.REACT_APP_MAPSKEY}`,
-    loadingElement: <div style={{ height: `100%` }} />,
-    containerElement: <div style={{ height: `100vh` }} />,
-    mapElement: <div style={{ height: `100%` }} />,
-  }),
-  withScriptjs,
-  withGoogleMap
-)((props) =>
-  <GoogleMap defaultZoom={15} defaultCenter={props.position}>
-  {props.isMarkerShown && <Marker position={props.position} onClick={props.onMarkerClick} />}
-  </GoogleMap>
-);
-export default MyMapComponent;
+export class MapGoogle extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      position: props.position,
+      markers: props.markers,
+    };
+  }
+  render() {
+    return (
+      <Map google={this.props.google} style={{width: '100%', height: '100%', position: 'relative'}} className={'map'} zoom={15} initialCenter={this.state.position}>
+        <Marker title={'My Position.'} name={'Me'} position={this.state.position} />
+        {this.state.markers.map((marker,index) => (<Marker key={`marker${index}`} position={marker} />))}
+      </Map>
+    );
+  }
+}
+
+export default MapGoogle;

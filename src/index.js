@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom';
 import Splash from './Splash';
 import Home from './Home';
 import { HashRouter,Switch, Route } from 'react-router-dom'
-import Navigation from './Navigation.js';
 import './main.css';
 ReactDOM.render((
     <HashRouter>
