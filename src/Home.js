@@ -33,7 +33,8 @@ class Home extends Component {
 
   componentDidMount = () => window.addEventListener('drawRoute', this.drawRouteEvent);
   componentWillUnmount = () => window.removeEventListener('drawRoute', this.drawRouteEvent);
-  componentWillMount() {}
+  componentWillMount() {
+  }
 
   findSpot() {
     const MySwal = withReactContent(Swal);
