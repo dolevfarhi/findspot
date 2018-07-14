@@ -34,7 +34,7 @@
   .ellipse .text,  .ellipse .fa-piggy-bank,  .ellipse .fa-trophy{ position: relative; top: -5px;}
   .fa-piggy-bank { color:#f99eb6}
   .fa-trophy { color:#fbd663}
-  .changeMode {
+  .fixed-btn {
       position: fixed;
       top: 50px;
       border: none;
@@ -43,12 +43,24 @@
       font-size: 30px;
       width: 60px;
       height: 60px;
-      right: 4px;
+  }
+  .fixed-btn:focus {
+    outline: none;
+}
+  .changeMode{
+    right: 4px;
+  }
+  .findMe {
+      right: 75px;
   }
   .changeMode .fa-parking { color:#379af0;}
-  
 
-
+.react-countdown-clock{
+  position: fixed;
+  right: 170px;
+  top: 50px;
+  z-index: 1111;
+}
 
 .openDialog { width: 130px; height: 130px;}
 /*style the box*/

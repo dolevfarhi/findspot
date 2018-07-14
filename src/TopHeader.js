@@ -16,13 +16,13 @@ class TopHeader extends Component {
         </div>
         <div className="col-3">
           <span className="ellipse">
-            <span className="text">{this.state.money}$</span>
+            <span className="text mr-2">{this.state.money}$</span>
             <i className="fas fa-piggy-bank"></i>
           </span>
         </div>
         <div className="col-3">
           <span className="ellipse">
-            <span className="text">{this.state.points}</span>
+            <span className="text mr-2">{this.state.points}</span>
             <i className="fas fa-trophy"></i>
           </span>
         </div>
