@@ -339,7 +339,6 @@ cancelfindSpot(){
         travelMode: 'DRIVING'
       };
       directionsService.route(request, function(result, status) {
-        console.log(result);
         let totalDistance=0;
         let totalDuration=0;
         if (status === 'OK') {
