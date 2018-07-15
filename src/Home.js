@@ -6,10 +6,10 @@ import withReactContent from 'sweetalert2-react-content'
 import TopHeader from "./TopHeader.js"
 import Map from "./Map.js"
 import openSocket from 'socket.io-client';
+
+
 //const  socket = openSocket('https://findspot.herokuapp.com');
 const socket = openSocket('https://findspot.herokuapp.com');
-
-
 
 const MySwal = withReactContent(Swal);
 class Home extends Component {
@@ -47,11 +47,12 @@ class Home extends Component {
     this.logout = this.logout.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.sendMessage = this.sendMessage.bind(this);
+    this.arrive = this.arrive.bind(this);
+    this.toggleVip = this.toggleVip.bind(this);
 
     socket.on(this.state.user.id, (data)=>this.socket(data));
 
   }
-
   componentDidMount = () => window.addEventListener('drawRoute', this.drawRouteEvent);
   componentWillUnmount = () => window.removeEventListener('drawRoute', this.drawRouteEvent);
   componentWillMount() {
@@ -71,6 +72,19 @@ class Home extends Component {
         self.updateLocation();
         });
       }).catch(()=>{ MySwal.close(); self.findMe()});
+  }
+  toggleVip(){
+     MySwal.fire({title: `<p>Changing your Status</p>`,onOpen: () => {MySwal.showLoading()}});
+     let user = Object.assign({}, this.state.user);
+     user.isVip = !user.isVip;
+     var url = `https://findspot.herokuapp.com/user/removeVip/${user.id}`
+     if (user.isVip) url = `https://findspot.herokuapp.com/user/makeVip/${user.id}`
+     localStorage.removeItem("user");
+     localStorage.setItem("user", JSON.stringify(user));
+     fetch(url,{method: 'PUT',headers: {"Content-Type": "application/json; charset=utf-8"}}).then((response) => {
+       MySwal.close();
+       if (response.status === 200) this.setState({user:user});
+    })
   }
   socket(data){
     var self = this;
@@ -107,7 +121,7 @@ class Home extends Component {
     }
     else if(data.type === "finnish"){
       let points = this.state.spot.points;
-      MySwal.fire({title: 'Thanks!',text: `Thanks for holding the spot! You won ${points} points!`,type: 'success'});
+      fetch(`https://findspot.herokuapp.com/spot/${this.state.spot.id}`,{method: 'DELETE',headers: {"Content-Type": "application/json; charset=utf-8"}})
       let user = Object.assign({}, this.state.user);
       user.points += points;
       localStorage.removeItem("user");
@@ -115,19 +129,27 @@ class Home extends Component {
       if (this.state.directionsDisplay) this.state.directionsDisplay.setMap(null);
       let spot = {id:0,points:0,position:{lat: 0,lng: 0}}
       clearInterval(this.state.timeoutfunc);
-      this.setState({user:user,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
+      this.setState({user: user,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
       fetch(`https://findspot.herokuapp.com/user/points/${this.state.user.id}`, {
           method: 'PUT',
           headers: {"Content-Type": "application/json; charset=utf-8"},
           body: JSON.stringify({points:points})
       })
+      MySwal.fire({title: 'Thanks!',text: `Thanks for holding the spot! You won ${points} points!`,type: 'success'});
+      if (user.points>5 && !user.isVip) this.toggleVip();
       }
     else if(data.type === "cancel"){
-      let spot = {id:0,points:0,position:{lat:0,lng:0}};
-      this.clearMarkers();
       if (this.state.directionsDisplay) this.state.directionsDisplay.setMap(null);
       clearInterval(this.state.timeoutfunc);
-      this.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
+      this.clearMarkers();
+      if (this.state.spot.id){
+      fetch(`https://findspot.herokuapp.com/spot/park/${this.state.spot.id}`, {method: 'DELETE',headers: {"Content-Type": "application/json; charset=utf-8"}});
+      this.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,markers:[]}, () => this.updateLocation());
+      }
+      else {
+        let spot = {id:0,points:0,position:{lat:0,lng:0}};
+        this.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
+      }
       MySwal.fire({title: 'Canceled',text: `The Other user canceled!`,type: 'warning'});
     }
     else if(data.type === "msg"){
@@ -198,10 +220,17 @@ class Home extends Component {
   }
 
 cancelfindSpot(){
-  let payload = {title: 'Are you sure?',text: `You are about to cancel this spot. You'll not gain the ${this.state.spot.points} points.`,type: 'warning',showCancelButton: true,confirmButtonColor: '#3085d6',cancelButtonColor: '#d33',confirmButtonText: 'Yes, cancel it!'}
+  let payload = {title: 'Are you sure?',text: `You are about to cancel this spot.`,type: 'warning',showCancelButton: true,confirmButtonColor: '#3085d6',cancelButtonColor: '#d33',confirmButtonText: 'Yes, cancel it!'}
   MySwal.fire(payload).then((result) => {
   if (result.value) {
-    //TODO: CANCEL HERE
+    let spot = {id:0,points:0,position:{lat:0,lng:0}};
+    this.clearMarkers();
+    clearInterval(this.state.timeoutfunc);
+    let payload = {'type':"cancel"};
+    if (this.state.directionsDisplay) this.state.directionsDisplay.setMap(null);
+    this.sendPush(this.state.chatUser,payload);
+    this.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
+    MySwal.fire({title: 'Yes :)',text: `Your Route was canceled!`,type: 'success'});
   }
   })
 }
@@ -236,10 +265,12 @@ cancelfindSpot(){
     if (!this.state.spot.id){
     MySwal.fire({title: <p>Searching spots near you</p>,onOpen: () => {MySwal.showLoading()}});
     var self = this;
-    let distance;
+    let distance= 2000;
     let zoomLevel = this.state.map.getZoom();
-    if (zoomLevel >= 15) distance = 2000;
-    else { distance = (15 - zoomLevel) * 3000 };
+    if (this.state.user.isVip){
+      if (zoomLevel >= 15) distance = 2000;
+      else { distance = (15 - zoomLevel) * 3000 };
+    }
     fetch('https://findspot.herokuapp.com/spot/search', {
       method: 'POST',
       headers: {"Content-Type": "application/json; charset=utf-8"},
@@ -248,7 +279,10 @@ cancelfindSpot(){
     .then((data) => {
       MySwal.close()
       if (!data.length) {
-        MySwal.fire({title: <p>No Spots close to you <br/> <i className="mt-3 far fa-frown"></i></p>,  timer: 2000});
+        if (!self.state.user.isVip && zoomLevel<15)
+        MySwal.fire({title: `<p>No Spots close to you, because you are not VIP, your search was limited to 2KM <br/> <i className="mt-3 far fa-frown"></i></p>`});
+        else
+        MySwal.fire({title: `<p>No Spots close to you <br/> <i className="mt-3 far fa-frown"></i></p>`});
       } else
         data.forEach((el) => self.addPlace({lat: el.location.coordinates[1], lng: el.location.coordinates[0]},false));
       }
@@ -259,6 +293,7 @@ cancelfindSpot(){
   drawRoute(map,pointA,pointB,fromEvent=true){
     var self = this;
     if(fromEvent){
+      var spotid;
     MySwal.fire({title: `<p>Letting the  user know</p>`,onOpen: () => {MySwal.showLoading()}});
     fetch('https://findspot.herokuapp.com/spot/search', {
       method: 'POST',
@@ -267,10 +302,11 @@ cancelfindSpot(){
     .then((response) => response.json())
     .then((data) => {
       if (data.length) {
-        fetch(`https://findspot.herokuapp.com/spot/goingto/${data[0]._id}/${self.state.user.id}`,{
+        spotid = data[0]._id;
+        fetch(`https://findspot.herokuapp.com/spot/goingto/${spotid}/${self.state.user.id}`,{
           method: 'POST',
           headers: {"Content-Type": "application/json; charset=utf-8"},
-          body: JSON.stringify({expires: 300000})})
+          body: JSON.stringify({expires: this.state.user.isVip?600000:300000})})
           .then((response) => {
             return response.json()})
           .then((data) => {
@@ -281,6 +317,10 @@ cancelfindSpot(){
                 self.sendPush(data.savedBy,push);
               }
             }, 3000);
+            fetch(`https://findspot.herokuapp.com/spot/park/${spotid}/${this.state.user.id}`, {
+                method: 'PUT',
+                headers: {"Content-Type": "application/json; charset=utf-8"}
+            });
             let push = {user:self.state.user,expires:data.expires,myLocation:pointA,type:"start"};
             self.sendPush(data.savedBy,push);
             self.setState({countdown:Math.ceil((new Date(data.expires)-new Date())/1000)})
@@ -337,7 +377,8 @@ cancelfindSpot(){
   }
   componentDidUpdate(){}
   changeMode(){
-    if (this.state.chatUser){
+
+    if (this.state.spot.id || this.state.chatUser){
       MySwal.fire({title: `<p>You cant change modes while active</p>`,type:'warning',  timer: 2000});
     }else {
     this.clearMarkers();
@@ -352,7 +393,7 @@ cancelfindSpot(){
 
   }
   findMe(){
-    if (!this.state.chatUser){
+    if (!this.state.spot.id && !this.state.chatUser){
       var self = this;
       MySwal.fire({title: `<p> Getting your Location</p>`,onOpen: () => {MySwal.showLoading()}});
       navigator.geolocation.getCurrentPosition((location) => {
@@ -371,12 +412,15 @@ cancelfindSpot(){
     MySwal.fire({title: 'Times out',text: `The time endend!`,type: 'warning'});
   }
   logout(){
+    if (!this.state.spot.id && !this.state.chatUser){
+
     let payload = {title: 'Are you sure?',text: `You are about to logout.`,type: 'warning',showCancelButton: true,confirmButtonColor: '#3085d6',cancelButtonColor: '#d33',confirmButtonText: 'Yes, logout!'};
     MySwal.fire(payload).then((result) => {
       if (result.value){
       localStorage.removeItem("user");
       window.location.reload();
     }})
+  }
   }
   handleChange(event) {
     const target = event.target;
@@ -389,17 +433,24 @@ cancelfindSpot(){
     this.setState({text: ""});
   }
   arrive(){
-
+    var self = this;
     this.sendPush(this.state.chatUser,{type:"finnish"});
-    MySwal.fire({title: 'Arrived!',text: `You are now in your spot :)!`,type: 'success'});
     if (this.state.directionsDisplay) this.state.directionsDisplay.setMap(null);
     let spot = {id:0,points:0,position:{lat: 0,lng: 0}}
     clearInterval(this.state.timeoutfunc);
-    this.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
+    self.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => {
+      self.updateLocation()
+      MySwal.fire({title: 'Arrived!',text: `You are now in your spot :)!`,type: 'success'});
+    });
+    setTimeout(function(){
+    if (self.state.directionsDisplay) self.state.directionsDisplay.setMap(null);
+    self.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => {
+      self.updateLocation()});
+  }, 3000);
   }
   renderSearcher(){
     return (<div>
-      <TopHeader money={this.state.user.money} points={this.state.user.points}/>
+      <TopHeader user={this.state.user} vipFunction={this.toggleVip}/>
       <Map google={this.props.google} onReady={this.mapReady} position={this.state.position}/>
         { !this.state.directionsDisplay &&
         <button className="fixed-bottom findButton vw-100 text-center" onClick={this.findSpot}>FIND A SPOT
@@ -407,11 +458,11 @@ cancelfindSpot(){
         </button> }
 
         { this.state.directionsDisplay &&
-        <button className="fixed-bottom findButton vw-100 text-center" onClick={this.cancelfindSpot}>CANCEL SPOT
+        <button className="fixed-bottom findButton vw-100 text-center" onClick={this.cancelfindSpot}>CANCEL ROUTE
           <i className="ml-2 fas fa-times"></i>
         </button> }
 
-      { this.state.countdown && <ReactCountdownClock seconds={this.state.countdown} color="#000" size={60} onComplete={this.timesUP} /> }
+      { this.state.countdown > 0 && <ReactCountdownClock seconds={this.state.countdown} color="#000" size={60} onComplete={this.timesUP} /> }
 
       <button className="fixed-btn changeMode" onClick={this.changeMode}><i className="fas fa-car"></i></button>
         <button className="fixed-btn findMe" onClick={this.findMe}><i className="fas fa-map-marker-alt"></i></button>
@@ -425,7 +476,7 @@ cancelfindSpot(){
   }
   renderFind(){
     return (<div>
-      <TopHeader money={this.state.user.money} points={this.state.user.points}/>
+      <TopHeader user={this.state.user} vipFunction={this.toggleVip}/>
       <Map google={this.props.google} onReady={this.mapReady} position={this.state.position}/>
         {parseInt(this.state.spot.id,10)===0 &&
           <button className="fixed-bottom findButton vw-100 text-center" onClick={this.saveSpot}>SAVE A SPOT
@@ -436,13 +487,13 @@ cancelfindSpot(){
               <button className="fixed-bottom findButton vw-100 text-center" onClick={this.cancelSpot}>CANCEL SPOT
                   <i className="ml-2 fas fa-times"></i>
                 </button> }
-                { this.state.countdown && <ReactCountdownClock seconds={this.state.countdown} color="#000" size={60} onComplete={this.timesUP} /> }
+                { this.state.countdown > 0 && <ReactCountdownClock seconds={this.state.countdown} color="#000" size={60} onComplete={this.timesUP} /> }
       <button className="fixed-btn changeMode" onClick={this.changeMode}><i className="fas fa-parking"></i></button>
         <button className="fixed-btn findMe" onClick={this.findMe}><i className="fas fa-map-marker-alt"></i></button>
         <button className="fixed-btn profile" onClick={this.logout}><img src={this.state.user.picture} alt="profile"/></button>
 
           { this.state.chatUser !== 0 && <div className="row chat"><div className="col-10 p-0 pl-1"> <input value={this.state.text} name="text" className="w-100" onChange={this.handleChange}/></div><div className="col-2 p-0"><button className="btn-primary w-100" onClick={this.sendMessage}>Send</button></div></div> }
-    </div>)
+  </div>)
   }
   render = () => this.state.searcher ? this.renderSearcher() : this.renderFind();
 

@@ -57,6 +57,7 @@
   .findMe {
       right: 75px;
   }
+  .fas.fa-star{ color:gold;}
   .changeMode .fa-parking { color:#379af0;}
   .row.chat{position: absolute;
     bottom: 40px;
@@ -79,6 +80,9 @@
   border-radius:50px;
   width: 100%;
 }
+
+#fireworks:empty { display:none; }
+#fireworks canvas,#fireworks { height: 100vh!important; }
 
 .openDialog { width: 130px; height: 130px;}
 /*style the box*/

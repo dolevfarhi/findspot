@@ -5,7 +5,7 @@ export class MapGoogle extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      position: props.position,
+       position: props.position
     };
   }
   render() {

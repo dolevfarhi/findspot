@@ -18,6 +18,7 @@ ReactDOM.render((<HashRouter>
     <div className="container-fluid text-center p-0">
       <Switch>
         <Route exact path='/' component={Splash}/>
+        <Route exact path='/index.html' component={Splash}/>
         <PrivateRoute exact path='/home' component={Home}/>
         <Route exact path="/login" component={Login} />
       </Switch>
