@@ -24,6 +24,8 @@ class Home extends Component {
       spot:{id:0,points:0,position:{lat: 0,lng: 0}},
       text:'',
       chatUser:0,
+      distance:0,
+      duration:0,
       timeoutfunc:null,
       directionsDisplay:undefined
     };
@@ -129,7 +131,7 @@ class Home extends Component {
       if (this.state.directionsDisplay) this.state.directionsDisplay.setMap(null);
       let spot = {id:0,points:0,position:{lat: 0,lng: 0}}
       clearInterval(this.state.timeoutfunc);
-      this.setState({user: user,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
+      this.setState({distance:0,duration:0,user: user,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
       fetch(`https://findspot.herokuapp.com/user/points/${this.state.user.id}`, {
           method: 'PUT',
           headers: {"Content-Type": "application/json; charset=utf-8"},
@@ -144,11 +146,11 @@ class Home extends Component {
       this.clearMarkers();
       if (this.state.spot.id){
       fetch(`https://findspot.herokuapp.com/spot/park/${this.state.spot.id}`, {method: 'DELETE',headers: {"Content-Type": "application/json; charset=utf-8"}});
-      this.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,markers:[]}, () => this.updateLocation());
+      this.setState({distance:0,duration:0,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,markers:[]}, () => this.updateLocation());
       }
       else {
         let spot = {id:0,points:0,position:{lat:0,lng:0}};
-        this.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
+        this.setState({distance:0,duration:0,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
       }
       MySwal.fire({title: 'Canceled',text: `The Other user canceled!`,type: 'warning'});
     }
@@ -229,7 +231,7 @@ cancelfindSpot(){
     let payload = {'type':"cancel"};
     if (this.state.directionsDisplay) this.state.directionsDisplay.setMap(null);
     this.sendPush(this.state.chatUser,payload);
-    this.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
+    this.setState({distance:0,duration:0,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
     MySwal.fire({title: 'Yes :)',text: `Your Route was canceled!`,type: 'success'});
   }
   })
@@ -251,7 +253,7 @@ cancelfindSpot(){
           let payload = {'type':"cancel"};
           if (this.state.directionsDisplay) this.state.directionsDisplay.setMap(null);
           this.sendPush(this.state.chatUser,payload);
-          this.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
+          this.setState({distance:0,duration:0,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
           MySwal.fire({title: 'Yes :)',text: `Your Spot was upublished!`,type: 'success'});
       }
       else  MySwal.fire({title: <p>Spot not published, error happened <br/> <i class="mt-3 far fa-frown"></i></p>,  timer: 2000});
@@ -306,7 +308,7 @@ cancelfindSpot(){
         fetch(`https://findspot.herokuapp.com/spot/goingto/${spotid}/${self.state.user.id}`,{
           method: 'POST',
           headers: {"Content-Type": "application/json; charset=utf-8"},
-          body: JSON.stringify({expires: this.state.user.isVip?600000:300000})})
+          body: JSON.stringify({ttl: this.state.user.isVip?600000:300000})})
           .then((response) => {
             return response.json()})
           .then((data) => {
@@ -337,9 +339,21 @@ cancelfindSpot(){
         travelMode: 'DRIVING'
       };
       directionsService.route(request, function(result, status) {
+        console.log(result);
+        let totalDistance=0;
+        let totalDuration=0;
         if (status === 'OK') {
           self.clearMarkers();
           directionsDisplay.setDirections(result);
+          let legs = result.routes[0].legs;
+          legs.forEach((el) =>{
+            totalDistance += el.distance.value;
+            totalDuration += el.duration.value;
+          });
+          totalDistance = (totalDistance/1000);
+          var now = new Date();
+          now.setSeconds(now.getSeconds() + totalDuration);
+          self.setState({duration:`${now.getHours()}:${now.getMinutes()}${(now.getMinutes()<10?'0':'')}`,distance:`${totalDistance.toFixed(1)}km`});
         }
       });
   }
@@ -365,7 +379,7 @@ cancelfindSpot(){
     });
     this.props.google.maps.event.addListener(marker, 'click', ((marker, i) => () => {
       if (i>0){
-        infowindow.setContent(`<div class='openDialog'><b>Get</b> <i class="ml-2 fas fa-car"></i> <br/><button onclick="fireEvent('drawRoute',${i})" >Click Here to Start</button></div>`);
+        infowindow.setContent(`<div class='openDialog'><b>Find Spot</b> <i class="ml-2 fas fa-car"></i> <br/><button class="btn btn-success mt-3" onclick="fireEvent('drawRoute',${i})" >Start</button></div>`);
         infowindow.open(map, marker);
       }
   })(marker, markersSize));
@@ -408,7 +422,7 @@ cancelfindSpot(){
   timesUP(){
     let spot = {id:0,points:0,position:{lat: 0,lng: 0}}
     clearInterval(this.state.timeoutfunc);
-    this.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
+    this.setState({distance:0,duration:0,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => this.updateLocation());
     MySwal.fire({title: 'Times out',text: `The time endend!`,type: 'warning'});
   }
   logout(){
@@ -438,13 +452,13 @@ cancelfindSpot(){
     if (this.state.directionsDisplay) this.state.directionsDisplay.setMap(null);
     let spot = {id:0,points:0,position:{lat: 0,lng: 0}}
     clearInterval(this.state.timeoutfunc);
-    self.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => {
+    self.setState({distance:0,duration:0,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => {
       self.updateLocation()
       MySwal.fire({title: 'Arrived!',text: `You are now in your spot :)!`,type: 'success'});
     });
     setTimeout(function(){
     if (self.state.directionsDisplay) self.state.directionsDisplay.setMap(null);
-    self.setState({directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => {
+    self.setState({distance:0,duration:0,directionsDisplay:undefined,chatUser:0,text:'',countdown:0,spot:spot,markers:[]}, () => {
       self.updateLocation()});
   }, 3000);
   }
@@ -470,6 +484,7 @@ cancelfindSpot(){
           { this.state.chatUser !== 0 && <button className="fixed-btn arrive" onClick={this.arrive}><i className="fas fa-flag-checkered"></i></button>
 }
 
+{ this.state.distance && <div className="row info"><div className="col-6">{this.state.distance}</div><div className="col-6">{this.state.duration}</div></div> }
 
             { this.state.chatUser !== 0 && <div className="row chat"><div className="col-10 p-0 pl-1"> <input value={this.state.text} name="text" className="w-100" onChange={this.handleChange}/></div><div className="col-2 p-0"><button className="btn-primary w-100" onClick={this.sendMessage}>Send</button></div></div> }
 </div>)
@@ -491,7 +506,7 @@ cancelfindSpot(){
       <button className="fixed-btn changeMode" onClick={this.changeMode}><i className="fas fa-parking"></i></button>
         <button className="fixed-btn findMe" onClick={this.findMe}><i className="fas fa-map-marker-alt"></i></button>
         <button className="fixed-btn profile" onClick={this.logout}><img src={this.state.user.picture} alt="profile"/></button>
-
+        { this.state.distance && <div className="row info"><div className="col-6">{this.state.distance}</div><div className="col-6">{this.state.duration}</div></div> }
           { this.state.chatUser !== 0 && <div className="row chat"><div className="col-10 p-0 pl-1"> <input value={this.state.text} name="text" className="w-100" onChange={this.handleChange}/></div><div className="col-2 p-0"><button className="btn-primary w-100" onClick={this.sendMessage}>Send</button></div></div> }
   </div>)
   }
