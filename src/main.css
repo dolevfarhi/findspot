@@ -38,11 +38,14 @@
       position: fixed;
       top: 50px;
       border: none;
-      background: #fff;
+      background: #FFF;
       border-radius: 50px;
       font-size: 30px;
       width: 60px;
       height: 60px;
+  }
+  .swal2-image {
+    border-radius: 50px;
   }
   .fixed-btn:focus {
     outline: none;
@@ -50,16 +53,31 @@
   .changeMode{
     right: 4px;
   }
+  .arrive{left:15px; }
   .findMe {
       right: 75px;
   }
   .changeMode .fa-parking { color:#379af0;}
-
+  .row.chat{position: absolute;
+    bottom: 40px;
+    background: #FFF;
+    width: 100%;
+    padding: 0;
+    margin-left: -2px;
+    border-bottom: 1px solid#ededed;}
 .react-countdown-clock{
   position: fixed;
-  right: 170px;
+  right: 245px;
   top: 50px;
   z-index: 1111;
+}
+
+.fixed-btn.profile{
+  right: 140px;
+}
+.fixed-btn.profile img{
+  border-radius:50px;
+  width: 100%;
 }
 
 .openDialog { width: 130px; height: 130px;}

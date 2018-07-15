@@ -33,7 +33,7 @@ export default class Login extends Component {
 
 responseGoogle = (response) => {
   if (response.hasOwnProperty("profileObj"))
-    this.login({name: response.profileObj.name, fbgpid: response.profileObj.googleId});
+    this.login({name: response.profileObj.name, fbgpid: response.profileObj.googleId,picture:response.profileObj.imageUrl});
 
   }
 responseFacebook = (response) => {
@@ -55,7 +55,7 @@ responseFacebook = (response) => {
       })
 
       else if (response.status === 403) MySwal.fire({title: `<p>Wrong Password</p><br/> <i class="mt-3 far fa-frown"></i>`});
-      else if (response.status === 200) response.json().then((object) => self.loginit({name:object.name,isVip:object.isVip,points:object.points,money:object.money,username:object.username,id:object._id,fbgpid:object.fbgpid}))
+      else if (response.status === 200) response.json().then((object) => self.loginit({name:object.name,isVip:object.isVip,points:object.points,money:object.money,username:object.username,id:object._id,fbgpid:object.fbgpid,picture:object.picture}))
       else MySwal.fire({title: <p>Something Wrong happened <br/> <i class="mt-3 far fa-frown"></i></p>,  timer: 2000});
     });
   }
@@ -74,7 +74,7 @@ responseFacebook = (response) => {
       } else if (response.status === 200) {
         response.json().then(function(object) {
           MySwal.close()
-          self.loginit({name:object.name,isVip:object.isVip,points:object.points,money:object.money,username:object.username,id:object._id,fbgpid:object.fbgpid});
+          self.loginit({name:object.name,isVip:object.isVip,points:object.points,money:object.money,username:object.username,id:object._id,fbgpid:object.fbgpid,picture:object.picture});
         })
       }
     });
