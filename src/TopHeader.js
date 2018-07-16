@@ -57,7 +57,7 @@ class TopHeader extends Component {
         <i className="fas fa-arrow-left fa-2x" onClick={this.closeRank}></i>
         <div className="font-weight-bold mt-2"><span>This Week</span> <i className="fas fa-trophy fa-2x"></i></div>
         <ul className="list-group">
-          {this.state.rankList.map((el) => <li className="list-group-item text-left row d-flex align-items-center" key={el.id}><div className="col-3"><img src ={el.picture} alt="profile"/></div> <div className="col-7"><span>{el.name}</span></div><div className="col-1 text-right"><span>{el.points}</span></div></li>)}
+          {this.state.rankList.map((el) => <li className="list-group-item text-left row d-flex align-items-center py-5" key={el.id}><div className="col-3"><img src ={el.picture} alt="profile"/></div> <div className="col-7"><span>{el.name}</span></div><div className="col-1 text-right"><span>{el.points}</span></div></li>)}
         </ul>
       </div>
     )

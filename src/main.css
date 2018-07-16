@@ -104,7 +104,7 @@ width: 100vw;
 height: 100vh;
 background-color: #FFF;
 z-index: 1050;
-overflow: hidden;
+overflow: scroll;
 
 }
 .rank ul {
